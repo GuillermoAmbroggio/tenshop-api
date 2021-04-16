@@ -55,20 +55,14 @@ server.get("/:idUser/cart", (req, res, next) => {
   const { idUser } = req.params;
   Order.findAll({ where: { userId: idUser, status: "created" } }).then(
     (data) => {
-      //console.log("asdasdsadd",data)
       if (data[0]) {
         let idOrder = data[0].dataValues.id;
         Productsxorders.findAll({
           where: { order_id: idOrder },
         }).then((result) => {
-          //console.log("resultttttttttttt",result)
           res.send(result);
         });
       } else {
-        // PREGUNTAR A GUILLE SI ESTO NO DEBERIA DE VOLVER UN ARRAY VACIO
-        // ya que si voy al carrito a la primera despues de haber comprado un carrito
-        // da error en la pagina porque no retorno un array sino que un string "The user has no products in the cart"
-        // res.status(404).send("The user has no products in the cart")
         res.status(200).send([]);
       }
     }

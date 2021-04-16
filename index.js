@@ -28,6 +28,6 @@ if (port == null || port == "") {
 
 conn.sync({ force: false }).then(() => {
   server.listen(port, () => {
-    console.log("###### API ON ######"); // eslint-disable-line no-console
+    console.log("###### API ON PORT " + port + " ######"); // eslint-disable-line no-console
   });
 });
