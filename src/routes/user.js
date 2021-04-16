@@ -6,8 +6,8 @@ const crypto = require("crypto"); //npm i --save sequelize crypto
 const sgMail = require("@sendgrid/mail");
 var nodemailer = require("nodemailer");
 var sgTransport = require("nodemailer-sendgrid-transport"); // npm i nodemailer-sendgrid-transport
-const template = require("./components/EmailRegistration");
-const templateorder = require("./components/EmailOrder");
+const template = require("./components/EmailRegistration.js");
+const templateorder = require("./components/EmailOrder.js");
 
 User.generateSalt = function () {
   return crypto.randomBytes(16).toString("base64");
