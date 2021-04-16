@@ -2,20 +2,11 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const morgan = require("morgan");
-const product = require("./routes/product");
-const categories = require("./routes/categories");
-const {
-  Product,
-  Category,
-  Order,
-  User,
-  ProductxOrder,
-  Reviews,
-} = require("./db.js");
+
+const { Product, Category, Order, User, Reviews } = require("./db.js");
 const ind = require("./routes/index");
 const passport = require("passport");
 const Strategy = require("passport-local").Strategy;
-const GitHubStrategy = require("passport-github").Strategy;
 
 const db = require("./db.js");
 
@@ -40,25 +31,12 @@ passport.use(
   })
 );
 
-passport.serializeUser(function (user, done) {
-  done(null, user.id);
-});
-
-passport.deserializeUser(function (id, done) {
-  db.User.findOne({ where: { id } })
-    .then((user) => {
-      done(null, user.dataValues);
-    })
-    .catch((err) => {
-      return done(err);
-    });
-});
-
 const server = express();
 
 server.use(
   require("express-session")({
     secret: "secret",
+    cookie: {},
     resave: false,
     saveUninitialized: false,
   })
@@ -72,7 +50,6 @@ server.use(cookieParser());
 server.use(morgan("dev"));
 server.use((req, res, next) => {
   //res.header("Access-Control-Allow-Origin", "http://localhost:3000/"); // update to match the domain you will make the request from
-  // res.header("Access-Control-Allow-Origin", "https://tenshop.vercel.app");
   const allowedOrigins = [
     "http://localhost:3000",
     "https://tenshop.vercel.app",
@@ -90,6 +67,20 @@ server.use((req, res, next) => {
   next();
 });
 
+passport.serializeUser(function (user, done) {
+  done(null, user.id);
+});
+
+passport.deserializeUser(function (id, done) {
+  db.User.findOne({ where: { id } })
+    .then((user) => {
+      done(null, user.dataValues);
+    })
+    .catch((err) => {
+      return done(err);
+    });
+});
+
 server.use(passport.initialize());
 server.use(passport.session());
 
@@ -101,21 +92,10 @@ server.use((req, res, next) => {
 
 server.use("/", ind);
 
-server.post("/login", (req, res, next) => {
-  passport.authenticate("local", (err, user, info) => {
-    if (err) {
-      return next(err);
-    }
-    if (!user) {
-      return res.send("No se encontro el Usuario");
-    }
-    req.logIn(user, (err) => {
-      if (err) {
-        return next(err);
-      }
-      return res.send(user);
-    });
-  })(req, res, next);
+server.post("/login", passport.authenticate("local"), function (req, res) {
+  // If this function gets called, authentication was successful.
+  // `req.user` contains the authenticated user.
+  res.send("Usuario Logueado!");
 });
 
 server.post("/loginGoogle", (req, res, next) => {
@@ -137,20 +117,19 @@ server.post("/loginGoogle", (req, res, next) => {
 
 function isAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
-    console.log("APP API 140", req, "ASDAS", req.isAuthenticated());
     next();
   } else {
-    res.send(false);
+    res.send("Fail Login, 150");
   }
 }
 
-server.get("/logout", (req, res) => {
-  req.logout();
-  res.send("Ok!");
-});
-
 server.get("/login", isAuthenticated, (req, res) => {
   res.send(req.user);
+});
+
+server.get("/logout", (req, res) => {
+  req.logout();
+  res.send("Usuario Desconectado");
 });
 
 server.post("/", async (req, res) => {
