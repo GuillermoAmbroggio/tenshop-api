@@ -6,12 +6,12 @@ const morgan = require("morgan");
 const { Product, Category, Order, User, Reviews } = require("./db.js");
 const ind = require("./routes/index");
 const passport = require("passport");
-const Strategy = require("passport-local").Strategy;
+const LocalStrategy = require("passport-local").Strategy;
 
 const db = require("./db.js");
 
 passport.use(
-  new Strategy(function (username, password, done, info) {
+  new LocalStrategy(function (username, password, done, info) {
     db.User.findOne({ where: { username } })
       .then((user) => {
         if (!user) {
@@ -72,7 +72,7 @@ passport.serializeUser(function (user, done) {
 });
 
 passport.deserializeUser(function (id, done) {
-  db.User.findOne({ where: { id } })
+  User.findOne({ where: { id } })
     .then((user) => {
       done(null, user.dataValues);
     })
@@ -92,10 +92,21 @@ server.use((req, res, next) => {
 
 server.use("/", ind);
 
-server.post("/login", passport.authenticate("local"), function (req, res) {
-  // If this function gets called, authentication was successful.
-  // `req.user` contains the authenticated user.
-  res.send("Usuario Logueado!");
+server.post("/login", (req, res, next) => {
+  passport.authenticate("local", (err, user, info) => {
+    if (err) {
+      return next(err);
+    }
+    if (!user) {
+      return res.send(user);
+    }
+    req.logIn(user, (err) => {
+      if (err) {
+        return next(err);
+      }
+      return res.send(user);
+    });
+  })(req, res, next);
 });
 
 server.post("/loginGoogle", (req, res, next) => {
