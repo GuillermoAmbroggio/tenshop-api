@@ -2,11 +2,16 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const morgan = require("morgan");
+const redis = require("redis");
+const session = require("express-session");
 
 const { Product, Category, Order, User, Reviews } = require("./db.js");
 const ind = require("./routes/index");
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
+
+let RedisStore = require("connect-redis")(session);
+let redisClient = redis.createClient();
 
 const db = require("./db.js");
 
@@ -33,12 +38,24 @@ passport.use(
 
 const server = express();
 
-server.use(
+/* server.use(
   require("express-session")({
     secret: "secret",
     cookie: {},
-    resave: true,
+    resave: false,
     saveUninitialized: false,
+  })
+); */
+redisClient.on("error", function (err) {
+  console.log("Error " + err);
+});
+
+server.use(
+  session({
+    store: new RedisStore({ client: redisClient }),
+    saveUninitialized: false,
+    secret: "keyboard cat",
+    resave: false,
   })
 );
 
