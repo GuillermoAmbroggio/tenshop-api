@@ -35,9 +35,15 @@ passport.use(
 const server = express();
 
 const pgStoreConfig = {
-  conString: process.env.DATABASE_DEV
-    ? `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`
-    : `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}?ssl=true`,
+  conString: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`,
+  dialectOptions: process.env.DATABASE_DEV
+    ? {}
+    : {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false, // <<<<<<< YOU NEED THIS
+        },
+      },
 };
 
 server.use(
