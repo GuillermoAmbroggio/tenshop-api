@@ -65,22 +65,21 @@ const server = express();
 }; */
 
 const sessionDBaccess = new sessionPool({
-  connectionString: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`,
-  dialect: "postgres",
-  protocol: "postgres",
-  dialectOptions: process.env.DATABASE_DEV
-    ? {}
-    : {
+  connectionString: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}?ssl=true`,
+});
+
+server.use(
+  session({
+    store: new pgSession({
+      pool: sessionDBaccess,
+      tableName: "session",
+      dialectOptions: {
         ssl: {
           require: true,
           rejectUnauthorized: false, // <<<<<<< YOU NEED THIS
         },
       },
-});
-
-server.use(
-  session({
-    store: new pgSession({ pool: sessionDBaccess, tableName: "session" }),
+    }),
     secret: "keyboard cat",
     resave: false,
     saveUninitialized: false,
