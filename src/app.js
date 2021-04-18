@@ -10,6 +10,7 @@ const LocalStrategy = require("passport-local").Strategy;
 const db = require("./db.js");
 const pgSession = require("connect-pg-simple")(session);
 const { DB_USER, DB_PASSWORD, DB_HOST, DB_NAME } = process.env;
+const sessionPool = require("pg").Pool;
 
 passport.use(
   new LocalStrategy(function (username, password, done, info) {
@@ -34,26 +35,52 @@ passport.use(
 
 const server = express();
 
-const conObject = {
+/* const conObject = {
   user: DB_USER,
   password: DB_PASSWORD,
   host: DB_HOST, // or whatever it may be
   port: 5432,
   database: DB_NAME,
-};
+}; */
 
-const pgStoreConfig = {
-  conObject: conObject, // or this,
-};
+/* const pgStoreConfig = {
+  pool: new (require("pg").Pool({
+    connectionString: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`,
+    dialect: "postgres",
+    protocol: "postgres",
+    dialectOptions: process.env.DATABASE_DEV
+      ? {}
+      : {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false, // <<<<<<< YOU NEED THIS
+          },
+        },
+  }))(), // or this
+}; */
 /* const pgStoreConfig = {
   conString: process.env.DATABASE_DEV
     ? `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`
     : `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}?ssl=true`,
 }; */
 
+const sessionDBaccess = new sessionPool({
+  connectionString: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`,
+  dialect: "postgres",
+  protocol: "postgres",
+  dialectOptions: process.env.DATABASE_DEV
+    ? {}
+    : {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false, // <<<<<<< YOU NEED THIS
+        },
+      },
+});
+
 server.use(
   session({
-    store: new pgSession(pgStoreConfig),
+    store: new pgSession({ pool: sessionDBaccess, tableName: "session" }),
     secret: "keyboard cat",
     resave: false,
     saveUninitialized: false,
