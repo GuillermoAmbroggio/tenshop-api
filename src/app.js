@@ -2,18 +2,14 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const morgan = require("morgan");
-const redis = require("redis");
 const session = require("express-session");
-
 const { Product, Category, Order, User, Reviews } = require("./db.js");
 const ind = require("./routes/index");
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
-
-let RedisStore = require("connect-redis")(session);
-let redisClient = redis.createClient();
-
 const db = require("./db.js");
+const pgSession = require("connect-pg-simple")(session);
+const { DB_USER, DB_PASSWORD, DB_HOST, DB_NAME } = process.env;
 
 passport.use(
   new LocalStrategy(function (username, password, done, info) {
@@ -38,24 +34,17 @@ passport.use(
 
 const server = express();
 
-/* server.use(
-  require("express-session")({
-    secret: "secret",
-    cookie: {},
-    resave: false,
-    saveUninitialized: false,
-  })
-); */
-redisClient.on("error", function (err) {
-  console.log("Error " + err);
-});
+const pgStoreConfig = {
+  conString: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`,
+};
 
 server.use(
   session({
-    store: new RedisStore({ client: redisClient }),
-    saveUninitialized: false,
+    store: new pgSession(pgStoreConfig),
     secret: "keyboard cat",
     resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: (30 * 24 * 60 * 60 * 1000) / 3 }, // 10 days
   })
 );
 
@@ -63,7 +52,7 @@ server.name = "API";
 
 server.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
 server.use(bodyParser.json({ limit: "50mb" }));
-server.use(cookieParser("mi secret app"));
+server.use(cookieParser("keyboard cat"));
 server.use(morgan("dev"));
 server.use((req, res, next) => {
   //res.header("Access-Control-Allow-Origin", "http://localhost:3000/"); // update to match the domain you will make the request from
