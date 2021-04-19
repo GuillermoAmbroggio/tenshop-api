@@ -35,7 +35,6 @@ server.name = "API";
 server.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
 server.use(bodyParser.json({ limit: "50mb" }));
 server.use(cookieParser());
-server.enable("trust proxy");
 server.use(morgan("dev"));
 server.use((req, res, next) => {
   //res.header("Access-Control-Allow-Origin", "http://localhost:3000/"); // update to match the domain you will make the request from
@@ -69,9 +68,8 @@ server.use(
       },
     }),
     secret: "keyboard cat",
-    proxy: true,
-    resave: true,
-    saveUninitialized: true,
+    resave: false,
+    saveUninitialized: false,
     cookie: { maxAge: (30 * 24 * 60 * 60 * 1000) / 3, secure: true }, // 10 days
   })
 );
@@ -81,11 +79,15 @@ passport.serializeUser(function (user, done) {
 });
 
 passport.deserializeUser(function (id, done) {
+  console.log("Deserialize USER 82  ID:", id);
   User.findByPk(id)
     .then((user) => {
+      console.log("Deserialize THEN:", user);
+
       done(null, user.dataValues);
     })
     .catch((err) => {
+      console.log("Deserialize CATCH:", err);
       return done(err);
     });
 });
