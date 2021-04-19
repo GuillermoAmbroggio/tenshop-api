@@ -12,57 +12,9 @@ const pgSession = require("connect-pg-simple")(session);
 const { DB_USER, DB_PASSWORD, DB_HOST, DB_NAME } = process.env;
 const sessionPool = require("pg").Pool;
 
-passport.use(
-  new LocalStrategy(function (username, password, done, info) {
-    db.User.findOne({ where: { username } })
-      .then((user) => {
-        if (!user) {
-          console.log("NO ENCUENTRA EL USUARIO", username);
-          return done(null, false);
-        }
-        if (!user.correctPassword(password)) {
-          console.log("NO PASA LA CONTRASEÑA");
-          return done(null, false);
-        }
-        console.log("ENCUENTRA EL USUARIO", user.dataValues);
-        return done(null, user.dataValues);
-      })
-      .catch((err) => {
-        return done(err);
-      });
-  })
-);
-
 const server = express();
 
-/* const conObject = {
-  user: DB_USER,
-  password: DB_PASSWORD,
-  host: DB_HOST, // or whatever it may be
-  port: 5432,
-  database: DB_NAME,
-}; */
-
-/* const pgStoreConfig = {
-  pool: new (require("pg").Pool({
-    connectionString: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`,
-    dialect: "postgres",
-    protocol: "postgres",
-    dialectOptions: process.env.DATABASE_DEV
-      ? {}
-      : {
-          ssl: {
-            require: true,
-            rejectUnauthorized: false, // <<<<<<< YOU NEED THIS
-          },
-        },
-  }))(), // or this
-}; */
-/* const pgStoreConfig = {
-  conString: process.env.DATABASE_DEV
-    ? `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`
-    : `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}?ssl=true`,
-}; */
+server.use("/", ind);
 
 const sessionDBaccess = new sessionPool(
   process.env.DATABASE_DEV
@@ -76,25 +28,6 @@ const sessionDBaccess = new sessionPool(
           rejectUnauthorized: false,
         },
       }
-);
-
-server.use(
-  session({
-    store: new pgSession({
-      pool: sessionDBaccess,
-      tableName: "session",
-      dialectOptions: {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false, // <<<<<<< YOU NEED THIS
-        },
-      },
-    }),
-    secret: "keyboard cat",
-    resave: false,
-    saveUninitialized: false,
-    cookie: { maxAge: (30 * 24 * 60 * 60 * 1000) / 3, secure: true }, // 10 days
-  })
 );
 
 server.name = "API";
@@ -122,6 +55,46 @@ server.use((req, res, next) => {
   next();
 });
 
+server.use(
+  session({
+    store: new pgSession({
+      pool: sessionDBaccess,
+      tableName: "session",
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false, // <<<<<<< YOU NEED THIS
+        },
+      },
+    }),
+    secret: "keyboard cat",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: (30 * 24 * 60 * 60 * 1000) / 3, secure: true }, // 10 days
+  })
+);
+
+passport.use(
+  new LocalStrategy(function (username, password, done, info) {
+    db.User.findOne({ where: { username } })
+      .then((user) => {
+        if (!user) {
+          console.log("NO ENCUENTRA EL USUARIO", username);
+          return done(null, false);
+        }
+        if (!user.correctPassword(password)) {
+          console.log("NO PASA LA CONTRASEÑA");
+          return done(null, false);
+        }
+        console.log("ENCUENTRA EL USUARIO", user.dataValues);
+        return done(null, user.dataValues);
+      })
+      .catch((err) => {
+        return done(err);
+      });
+  })
+);
+
 passport.serializeUser(function (user, done) {
   done(null, user.id);
 });
@@ -144,8 +117,6 @@ server.use((req, res, next) => {
   console.log("User!", req.user);
   next();
 });
-
-server.use("/", ind);
 
 server.post("/login", (req, res, next) => {
   passport.authenticate("local", (err, user, info) => {
@@ -183,6 +154,7 @@ server.post("/loginGoogle", (req, res, next) => {
 });
 
 function isAuthenticated(req, res, next) {
+  console.log("GET LOGUIN 157", req.user);
   if (req.isAuthenticated()) {
     next();
   } else {
