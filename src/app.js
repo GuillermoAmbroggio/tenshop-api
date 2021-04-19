@@ -74,6 +74,20 @@ server.use(
   })
 );
 
+passport.serializeUser(function (user, done) {
+  done(null, user.id);
+});
+
+passport.deserializeUser(function (id, done) {
+  User.findByPk(id)
+    .then((user) => {
+      done(null, user.dataValues);
+    })
+    .catch((err) => {
+      return done(err);
+    });
+});
+
 passport.use(
   new LocalStrategy(function (username, password, done, info) {
     db.User.findOne({ where: { username } })
@@ -95,28 +109,14 @@ passport.use(
   })
 );
 
-passport.serializeUser(function (user, done) {
-  done(null, user.id);
-});
-
-passport.deserializeUser(function (id, done) {
-  User.findByPk(id)
-    .then((user) => {
-      done(null, user.dataValues);
-    })
-    .catch((err) => {
-      return done(err);
-    });
-});
-
 server.use(passport.initialize());
 server.use(passport.session());
 
-server.use((req, res, next) => {
+/* server.use((req, res, next) => {
   console.log("Session! ", req.session);
   console.log("User!", req.user);
   next();
-});
+}); */
 
 server.post("/login", (req, res, next) => {
   passport.authenticate("local", (err, user, info) => {
@@ -153,19 +153,18 @@ server.post("/loginGoogle", (req, res, next) => {
   })(req, res, next);
 });
 
-function isAuthenticated(req, res, next) {
-  console.log("GET LOGUIN 157", req.user);
-  if (req.isAuthenticated()) {
-    next();
-  } else {
-    res.send("Fail Login, 150");
-  }
-}
-
 server.get("/login", isAuthenticated, (req, res) => {
   res.send(req.user);
 });
 
+function isAuthenticated(req, res, next) {
+  console.log("GET LOGUIN 157", req.user);
+  if (req.isAuthenticated()) {
+    return next();
+  } else {
+    res.send("Fail Login, 150");
+  }
+}
 server.get("/logout", (req, res) => {
   req.logout();
   res.send("Usuario Desconectado");
