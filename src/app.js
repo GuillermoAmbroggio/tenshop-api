@@ -74,24 +74,6 @@ server.use(
   })
 );
 
-passport.serializeUser(function (user, done) {
-  done(null, user.id);
-});
-
-passport.deserializeUser(function (id, done) {
-  console.log("Deserialize USER 82  ID:", id);
-  User.findByPk(id)
-    .then((user) => {
-      console.log("Deserialize THEN:", user);
-
-      done(null, user.dataValues);
-    })
-    .catch((err) => {
-      console.log("Deserialize CATCH:", err);
-      return done(err);
-    });
-});
-
 passport.use(
   new LocalStrategy(function (username, password, done, info) {
     db.User.findOne({ where: { username } })
@@ -112,6 +94,25 @@ passport.use(
       });
   })
 );
+
+passport.serializeUser(function (user, done) {
+  console.log("SERIAL USER 99", user.id);
+  done(null, user.id);
+});
+
+passport.deserializeUser(function (id, done) {
+  console.log("Deserialize USER 82  ID:", id);
+  User.findByPk(id)
+    .then((user) => {
+      console.log("Deserialize THEN:", user);
+
+      done(null, user.dataValues);
+    })
+    .catch((err) => {
+      console.log("Deserialize CATCH:", err);
+      return done(err);
+    });
+});
 
 server.use(passport.initialize());
 server.use(passport.session());
