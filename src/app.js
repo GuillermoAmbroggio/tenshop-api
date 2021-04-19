@@ -64,9 +64,19 @@ const server = express();
     : `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}?ssl=true`,
 }; */
 
-const sessionDBaccess = new sessionPool({
-  connectionString: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}?ssl=true`,
-});
+const sessionDBaccess = new sessionPool(
+  process.env.DATABASE_DEV
+    ? {
+        connectionString: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`,
+      }
+    : {
+        connectionString: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`,
+        ssl: {
+          require: true,
+          rejectUnauthorized: false,
+        },
+      }
+);
 
 server.use(
   session({
