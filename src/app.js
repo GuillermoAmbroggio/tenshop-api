@@ -12,9 +12,47 @@ const pgSession = require("connect-pg-simple")(session);
 const { DB_USER, DB_PASSWORD, DB_HOST, DB_NAME } = process.env;
 const sessionPool = require("pg").Pool;
 
-const server = express();
+passport.use(
+  new LocalStrategy(function (username, password, done, info) {
+    db.User.findOne({ where: { username } })
+      .then((user) => {
+        if (!user) {
+          console.log("NO ENCUENTRA EL USUARIO", username);
+          return done(null, false);
+        }
+        if (!user.correctPassword(password)) {
+          console.log("NO PASA LA CONTRASEÑA");
+          return done(null, false);
+        }
+        console.log("ENCUENTRA EL USUARIO", user.dataValues);
+        return done(null, user.dataValues);
+      })
+      .catch((err) => {
+        return done(err);
+      });
+  })
+);
 
-server.use("/", ind);
+passport.serializeUser(function (user, done) {
+  console.log("SERIAL USER 99", user.id);
+  done(null, user.id);
+});
+
+passport.deserializeUser(function (id, done) {
+  console.log("Deserialize USER 82  ID:", id);
+  User.findByPk(id)
+    .then((user) => {
+      console.log("Deserialize THEN:", user);
+
+      done(null, user);
+    })
+    .catch((err) => {
+      console.log("Deserialize CATCH:", err);
+      return done(err);
+    });
+});
+
+const server = express();
 
 const sessionDBaccess = new sessionPool(
   process.env.DATABASE_DEV
@@ -74,48 +112,14 @@ server.use(
   })
 );
 
-passport.use(
-  new LocalStrategy(function (username, password, done, info) {
-    db.User.findOne({ where: { username } })
-      .then((user) => {
-        if (!user) {
-          console.log("NO ENCUENTRA EL USUARIO", username);
-          return done(null, false);
-        }
-        if (!user.correctPassword(password)) {
-          console.log("NO PASA LA CONTRASEÑA");
-          return done(null, false);
-        }
-        console.log("ENCUENTRA EL USUARIO", user.dataValues);
-        return done(null, user.dataValues);
-      })
-      .catch((err) => {
-        return done(err);
-      });
-  })
-);
-
-passport.serializeUser(function (user, done) {
-  console.log("SERIAL USER 99", user.id);
-  done(null, user.id);
-});
-
-passport.deserializeUser(function (id, done) {
-  console.log("Deserialize USER 82  ID:", id);
-  User.findByPk(id)
-    .then((user) => {
-      console.log("Deserialize THEN:", user);
-
-      done(null, user);
-    })
-    .catch((err) => {
-      console.log("Deserialize CATCH:", err);
-      return done(err);
-    });
-});
-
 server.use(passport.initialize());
 server.use(passport.session());
+
+server.use((req, res, next) => {
+  next();
+});
+
+server.use("/", ind);
 
 /* server.use((req, res, next) => {
   console.log("Session! ", req.session);
@@ -159,7 +163,13 @@ server.post("/loginGoogle", (req, res, next) => {
 });
 
 server.get("/login", isAuthenticated, (req, res) => {
-  res.send(req.user);
+  User.findByPk(req.user.id)
+    .then((user) => {
+      res.send(user);
+    })
+    .catch((err) => {
+      res.send("no se encontro el usuario");
+    });
 });
 
 function isAuthenticated(req, res, next) {
