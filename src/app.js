@@ -106,7 +106,7 @@ passport.deserializeUser(function (id, done) {
     .then((user) => {
       console.log("Deserialize THEN:", user);
 
-      done(null, user.dataValues);
+      done(null, user);
     })
     .catch((err) => {
       console.log("Deserialize CATCH:", err);
